@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14532d">
+<title>Bhagat Ji Grocery — Smart Billing</title>
+<style>
+:root{--green:#14532d;--green2:#166534;--bg:#f3f6f4;--card:#fff;--text:#17221b;--muted:#647067;--line:#dfe7e1;--red:#b91c1c;--gold:#f5c451}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(135deg,var(--green),#15803d);color:white;padding:18px 16px 16px;position:sticky;top:0;z-index:5;box-shadow:0 3px 12px #0002}
+header h1{font-size:20px;margin:0}header p{margin:4px 0 0;font-size:12px;opacity:.9}
+nav{display:flex;gap:7px;overflow:auto;padding:10px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:72px;z-index:4}
+nav button{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:20px;padding:9px 13px;font-weight:650;color:var(--green)}
+nav button.active{background:var(--green);color:#fff;border-color:var(--green)}
+main{max-width:980px;margin:auto;padding:14px}
+section{display:none}section.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:15px;margin-bottom:13px;box-shadow:0 2px 7px #10201608}
+h2{font-size:18px;margin:0 0 12px}h3{font-size:15px;margin:0 0 9px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.metric{background:#f7faf7;border:1px solid var(--line);padding:12px;border-radius:12px}.metric span{font-size:12px;color:var(--muted);display:block}.metric strong{font-size:21px;display:block;margin-top:5px}
+label{display:block;font-size:13px;font-weight:650;margin:10px 0 5px}
+input,select{width:100%;padding:11px;border:1px solid #cbd5ce;border-radius:9px;font:inherit;background:#fff;min-width:0}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+button{cursor:pointer;font:inherit}.btn{border:0;border-radius:9px;padding:11px 13px;font-weight:700;background:var(--green);color:#fff;margin-top:10px}.btn.secondary{background:#e8f2ea;color:var(--green);border:1px solid #c9dfce}.btn.danger{background:#fee2e2;color:#991b1b}.btn.full{width:100%}.btn.small{padding:7px 9px;margin:0;font-size:12px}
+.note{font-size:12px;color:var(--muted);line-height:1.5}.pill{display:inline-block;background:#e8f2ea;color:var(--green);padding:4px 8px;border-radius:99px;font-size:11px;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:9px 5px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-size:11px}
+.tablewrap{overflow-x:auto}.right{text-align:right}.total{font-size:21px;font-weight:800}.empty{color:var(--muted);padding:12px;text-align:center;font-size:13px}
+#scanner{width:100%;max-height:270px;background:#111;border-radius:12px;display:none;margin-top:8px}
+footer{text-align:center;padding:18px;color:var(--muted);font-size:11px}
+@media(min-width:700px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.layout{display:grid;grid-template-columns:1.15fr .85fr;gap:13px}.layout .card{margin-bottom:0}.wide{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header><h1>🏪 BHAGAT JI GROCERY</h1><p>Smart Billing • Stock • Udhar • Daily Accounts</p></header>
+<nav id="tabs">
+<button class="active" data-tab="dashboard">डैशबोर्ड</button><button data-tab="billing">बिलिंग</button><button data-tab="products">प्रोडक्ट / स्टॉक</button><button data-tab="purchase">खरीद</button><button data-tab="accounts">उधारी / खर्च</button><button data-tab="reports">रिपोर्ट</button>
+</nav>
+<main>
+<section id="dashboard" class="active">
+<div class="card"><h2>आज का हिसाब</h2><div class="grid">
+<div class="metric"><span>आज की बिक्री</span><strong id="mSales">₹0</strong></div>
+<div class="metric"><span>आज कैश मिला</span><strong id="mCash">₹0</strong></div>
+<div class="metric"><span>आज UPI मिला</span><strong id="mUpi">₹0</strong></div>
+<div class="metric"><span>आज उधार बिक्री</span><strong id="mCredit">₹0</strong></div>
+<div class="metric"><span>स्टॉक में प्रोडक्ट</span><strong id="mProducts">0</strong></div>
+<div class="metric"><span>ग्राहकों से लेना है</span><strong id="mReceivable">₹0</strong></div>
+<div class="metric"><span>सप्लायर को देना है</span><strong id="mPayable">₹0</strong></div>
+<div class="metric"><span>आज के खर्च</span><strong id="mExpense">₹0</strong></div>
+</div></div>
+<div class="card"><h2>आज की हाल की एंट्री</h2><div id="recent"></div></div>
+<div class="card"><span class="pill">प्रोटोटाइप / शुरुआती वर्जन</span><p class="note">यह वर्जन डेटा इसी ब्राउज़र/डिवाइस में सेव करता है। मोबाइल बदलने या दूसरे डिवाइस पर वही डेटा पाने के लिए अगला चरण क्लाउड डेटाबेस और लॉगिन जोड़ना होगा। महत्वपूर्ण रिकॉर्ड का नियमित बैकअप रखें।</p><button class="btn secondary" onclick="exportData()">डेटा बैकअप डाउनलोड (JSON)</button> <label for="importFile">बैकअप वापस लोड करें</label><input id="importFile" type="file" accept=".json" onchange="importData(event)"></div>
+</section>
+
+<section id="billing">
+<div class="layout">
+<div class="card"><h2>🧾 नया बिल</h2>
+<label>बारकोड / प्रोडक्ट खोजें</label><div class="row"><input id="scanInput" placeholder="बारकोड या नाम लिखें" onkeydown="if(event.key==='Enter') addByCode()"><button class="btn" style="margin:0" onclick="addByCode()">जोड़ें</button></div>
+<button class="btn secondary full" onclick="startScanner()">📷 कैमरे से बारकोड स्कैन</button><video id="scanner" playsinline></video><p class="note" id="scanMsg">यदि कैमरा स्कैन उपलब्ध न हो, बारकोड नंबर टाइप करके जोड़ें।</p>
+<div id="cartArea"></div>
+<label>ग्राहक का नाम (वैकल्पिक)</label><input id="saleCustomer" placeholder="ग्राहक का नाम">
+<label>मोबाइल नंबर (वैकल्पिक)</label><input id="salePhone" inputmode="numeric" placeholder="10 अंकों का मोबाइल नंबर">
+<div class="row"><div><label>भुगतान का तरीका</label><select id="saleMode"><option value="cash">Cash</option><option value="upi">UPI</option><option value="credit">उधार</option><option value="split">Cash + UPI</option></select></div><div><label>छूट (₹)</label><input id="saleDiscount" type="number" min="0" value="0"></div></div>
+<div id="splitFields" class="row" style="display:none"><div><label>Cash (₹)</label><input id="splitCash" type="number" min="0" value="0"></div><div><label>UPI (₹)</label><input id="splitUpi" type="number" min="0" value="0"></div></div>
+<p>कुल: <span class="total" id="cartTotal">₹0</span></p>
+<button class="btn full" onclick="completeSale()">बिल सेव करें</button><button class="btn secondary full" onclick="clearCart()">बिल खाली करें</button>
+</div>
+<div class="card"><h2>बिल सेव होने के बाद</h2><p class="note">बिल सेव होने पर स्टॉक, बिक्री और ग्राहक की उधारी अपने आप अपडेट होगी। इस शुरुआती वर्जन में बिल को WhatsApp पर शेयर करने और प्रिंट करने के विकल्प दिए जाएँगे।</p><div id="lastBill"><div class="empty">अभी कोई बिल नहीं बना है।</div></div></div>
+</div>
+</section>
+
+<section id="products">
+<div class="card"><h2>📦 नया प्रोडक्ट जोड़ें</h2>
+<div class="row"><div><label>प्रोडक्ट नाम *</label><input id="pName" placeholder="जैसे Parle-G 100g"></div><div><label>बारकोड / SKU</label><input id="pCode" placeholder="बारकोड नंबर"></div></div>
+<button class="btn secondary full" onclick="startProductScanner()">📷 कैमरे से बारकोड स्कैन करके यहाँ भरें</button>
+<video id="productScanner" playsinline style="display:none;width:100%;max-height:260px;background:#111;border-radius:12px;margin-top:8px"></video>
+<p class="note" id="productScanMsg">स्कैन होने पर बारकोड नंबर ऊपर वाले फ़ील्ड में अपने आप भर जाएगा।</p>
+<div class="row"><div><label>खरीद मूल्य (₹)</label><input id="pCost" type="number" min="0" value="0"></div><div><label>बिक्री मूल्य (₹) *</label><input id="pPrice" type="number" min="0" value="0"></div></div>
+<div class="row"><div><label>शुरुआती स्टॉक</label><input id="pStock" type="number" min="0" value="0"></div><div><label>यूनिट</label><select id="pUnit"><option>पीस</option><option>पैकेट</option><option>किलो</option><option>ग्राम</option><option>लीटर</option><option>बोतल</option><option>डिब्बा</option></select></div></div>
+<button class="btn" onclick="saveProduct()">प्रोडक्ट सेव करें</button><button class="btn secondary" onclick="makeCode()">नया SKU बनाएँ</button>
+</div>
+<div class="card"><h2>आपके प्रोडक्ट</h2><input id="productSearch" placeholder="नाम या बारकोड खोजें" oninput="renderProducts()"><div class="tablewrap" id="productsTable"></div></div>
+</section>
+
+<section id="purchase">
+<div class="card"><h2>🛒 खरीद / Purchase Entry</h2>
+<label>सप्लायर का नाम</label><input id="purSupplier" placeholder="डिस्ट्रीब्यूटर / होलसेलर">
+<label>प्रोडक्ट</label><select id="purProduct"></select>
+<div class="row"><div><label>मात्रा</label><input id="purQty" type="number" min="0.001" step="any" value="1"></div><div><label>प्रति यूनिट खरीद मूल्य (₹)</label><input id="purCost" type="number" min="0" step="any" value="0"></div></div>
+<div class="row"><div><label>अभी भुगतान (₹)</label><input id="purPaid" type="number" min="0" value="0"></div><div><label>बिल / रेफरेंस नंबर</label><input id="purRef" placeholder="वैकल्पिक"></div></div>
+<button class="btn" onclick="savePurchase()">खरीद सेव करें</button>
+<p class="note">खरीद सेव करने पर स्टॉक बढ़ेगा और भुगतान बाकी होने पर सप्लायर का बकाया दर्ज होगा।</p>
+</div>
+</section>
+
+<section id="accounts">
+<div class="card"><h2>💳 ग्राहक से उधारी वसूली</h2><label>ग्राहक का नाम</label><input id="payCustomer" placeholder="नाम"><div class="row"><div><label>मोबाइल नंबर (वैकल्पिक)</label><input id="payPhone" inputmode="numeric"></div><div><label>जमा राशि (₹)</label><input id="payAmount" type="number" min="1"></div></div><button class="btn" onclick="receivePayment()">भुगतान दर्ज करें</button></div>
+<div class="card"><h2>💸 दुकान का खर्च</h2><div class="row"><div><label>खर्च का विवरण</label><input id="expName" placeholder="जैसे ट्रांसपोर्ट"></div><div><label>राशि (₹)</label><input id="expAmount" type="number" min="1"></div></div><button class="btn" onclick="saveExpense()">खर्च सेव करें</button></div>
+<div class="card"><h2>🏢 सप्लायर को भुगतान</h2><label>सप्लायर का नाम</label><input id="supPayName" placeholder="सप्लायर का नाम"><label>भुगतान राशि (₹)</label><input id="supPayAmount" type="number" min="1"><button class="btn" onclick="supplierPayment()">भुगतान दर्ज करें</button></div>
+<div class="card"><h2>खातों का सारांश</h2><div id="ledgerSummary"></div></div>
+</section>
+
+<section id="reports">
+<div class="card"><h2>📊 रिपोर्ट</h2><div class="grid">
+<div class="metric"><span>कुल बिक्री</span><strong id="rSales">₹0</strong></div><div class="metric"><span>कुल खरीद</span><strong id="rPurchase">₹0</strong></div><div class="metric"><span>कुल खर्च</span><strong id="rExpense">₹0</strong></div><div class="metric"><span>अनुमानित सकल लाभ*</span><strong id="rProfit">₹0</strong></div>
+</div><p class="note">*यह शुरुआती अनुमान है; रिटर्न, खराब माल, टैक्स और स्टॉक समायोजन शामिल नहीं हैं। इसे आधिकारिक लेखा/टैक्स रिपोर्ट न मानें।</p></div>
+<div class="card"><h2>Day Book / सभी एंट्री</h2><div class="tablewrap" id="daybook"></div><button class="btn secondary" onclick="exportCSV()">CSV रिपोर्ट डाउनलोड करें</button></div>
+<div class="card"><h2>डेटा रीसेट</h2><p class="note">यह इस डिवाइस के सभी स्थानीय रिकॉर्ड मिटा देगा। पहले बैकअप डाउनलोड करें।</p><button class="btn danger" onclick="resetData()">सारा स्थानीय डेटा मिटाएँ</button></div>
+</section>
+</main>
+<footer>Bhagat Ji Grocery • शुरुआती MVP • रिकॉर्ड सेव करने के लिए इस ब्राउज़र का डेटा साफ़ न करें।</footer>
+<script>
+const KEY='bjg_mvp_v1';
+let db=loadDB(), cart=[], lastBill=null, stream=null, scanTimer=null;
+function blank(){return {products:[],sales:[],purchases:[],expenses:[],customerPayments:[],supplierPayments:[],events:[],nextBill:1001};}
+function loadDB(){try{return {...blank(),...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch(e){return blank()}}
+function saveDB(){localStorage.setItem(KEY,JSON.stringify(db));refreshAll()}
+function money(n){return '₹'+(Number(n)||0).toLocaleString('en-IN',{maximumFractionDigits:2})}
+function today(){return new Date().toLocaleDateString('en-CA')}
+function stamp(){return new Date().toISOString()}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function navTo(id){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));document.querySelectorAll('main section').forEach(s=>s.classList.toggle('active',s.id===id));if(id==='billing')renderCart()}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>navTo(b.dataset.tab));
+document.getElementById('saleMode').onchange=()=>document.getElementById('splitFields').style.display=document.getElementById('saleMode').value==='split'?'grid':'none';
+function makeCode(){document.getElementById('pCode').value='BJG'+Date.now().toString().slice(-8)}
+function saveProduct(){
+ let name=document.getElementById('pName').value.trim(),code=document.getElementById('pCode').value.trim(),cost=+document.getElementById('pCost').value,price=+document.getElementById('pPrice').value,stock=+document.getElementById('pStock').value,unit=document.getElementById('pUnit').value;
+ if(!name||price<0||!Number.isFinite(price)){alert('प्रोडक्ट का नाम और सही बिक्री मूल्य भरें।');return}
+ if(code&&db.products.some(p=>p.code===code)){alert('यह बारकोड/SKU पहले से मौजूद है।');return}
+ db.products.push({id:Date.now(),name,code:code||('BJG'+Date.now().toString().slice(-8)),cost:Math.max(0,cost),price,stock:Math.max(0,stock),unit});
+ db.events.unshift({date:stamp(),type:'प्रोडक्ट जोड़ा',detail:name,amount:0});saveDB();
+ ['pName','pCode'].forEach(id=>document.getElementById(id).value='');document.getElementById('pCost').value='0';document.getElementById('pPrice').value='0';document.getElementById('pStock').value='0';alert('प्रोडक्ट सेव हो गया।');
+}
+function renderProducts(){
+ const q=(document.getElementById('productSearch')?.value||'').toLowerCase();
+ let ps=db.products.filter(p=>(p.name+' '+p.code).toLowerCase().includes(q));
+ document.getElementById('productsTable').innerHTML=ps.length?'<table><thead><tr><th>प्रोडक्ट</th><th>SKU/बारकोड</th><th>स्टॉक</th><th>कीमत</th><th></th></tr></thead><tbody>'+ps.map(p=>`<tr><td>${esc(p.name)}<br><small>${esc(p.unit)}</small></td><td>${esc(p.code)}</td><td>${p.stock}</td><td>${money(p.price)}</td><td><button class="btn small secondary" onclick="editStock(${p.id})">स्टॉक</button></td></tr>`).join('')+'</tbody></table>':'<div class="empty">अभी प्रोडक्ट नहीं हैं। पहले ऊपर से प्रोडक्ट जोड़ें।</div>';
+ document.getElementById('purProduct').innerHTML=db.products.map(p=>`<option value="${p.id}">${esc(p.name)} — स्टॉक ${p.stock}</option>`).join('')||'<option value="">पहले प्रोडक्ट जोड़ें</option>';
+}
+function editStock(id){let p=db.products.find(x=>x.id===id);if(!p)return;let n=prompt(`${p.name}: नया कुल स्टॉक दर्ज करें`,p.stock);if(n===null)return;if(!Number.isFinite(+n)||+n<0){alert('स्टॉक सही भरें');return}p.stock=+n;db.events.unshift({date:stamp(),type:'स्टॉक सुधार',detail:p.name,amount:0});saveDB()}
+function addByCode(){let q=document.getElementById('scanInput').value.trim();if(!q)return;let p=db.products.find(p=>p.code===q)||db.products.find(p=>p.name.toLowerCase()===q.toLowerCase())||db.products.find(p=>p.name.toLowerCase().includes(q.toLowerCase()));if(!p){let go=confirm('यह बारकोड अभी आपके प्रोडक्ट रिकॉर्ड में नहीं है। क्या अभी नया प्रोडक्ट जोड़ना चाहते हैं?');if(go){let name=prompt('प्रोडक्ट का नाम लिखें');if(!name||!name.trim())return;let price=prompt('बिक्री मूल्य (₹) लिखें','0');if(price===null||!Number.isFinite(+price)||+price<0){alert('सही बिक्री मूल्य लिखें।');return}let cost=prompt('खरीद मूल्य (₹) लिखें','0');if(cost===null||!Number.isFinite(+cost)||+cost<0){alert('सही खरीद मूल्य लिखें।');return}let stock=prompt('अभी उपलब्ध स्टॉक कितनी मात्रा में है?','0');if(stock===null||!Number.isFinite(+stock)||+stock<0){alert('सही स्टॉक लिखें।');return}p={id:Date.now(),name:name.trim(),code:q,cost:+cost,price:+price,stock:+stock,unit:'पीस'};db.products.push(p);db.events.unshift({date:stamp(),type:'प्रोडक्ट जोड़ा',detail:p.name+' • '+p.code,amount:0});saveDB();addCart(p.id);document.getElementById('scanInput').value=''}return}addCart(p.id);document.getElementById('scanInput').value=''}
+function addCart(id){let p=db.products.find(p=>p.id===id);if(!p)return;let line=cart.find(x=>x.id===id);if(line)line.qty+=1;else cart.push({id,qty:1});renderCart()}
+function renderCart(){let el=document.getElementById('cartArea');if(!cart.length){el.innerHTML='<div class="empty">बिल में अभी कोई सामान नहीं है।</div>';document.getElementById('cartTotal').textContent=money(0);return}
+ el.innerHTML='<div class="tablewrap"><table><thead><tr><th>सामान</th><th>मात्रा</th><th>राशि</th><th></th></tr></thead><tbody>'+cart.map(c=>{let p=db.products.find(x=>x.id===c.id);return p?`<tr><td>${esc(p.name)}<br><small>${money(p.price)} / ${esc(p.unit)}</small></td><td><input style="width:72px;padding:6px" type="number" min="0.001" step="any" value="${c.qty}" onchange="setQty(${c.id},this.value)"></td><td>${money(p.price*c.qty)}</td><td><button class="btn danger small" onclick="removeCart(${c.id})">×</button></td></tr>`:''}).join('')+'</tbody></table></div>';
+ document.getElementById('cartTotal').textContent=money(cart.reduce((s,c)=>s+(db.products.find(p=>p.id===c.id)?.price||0)*c.qty,0));
+}
+function setQty(id,q){let c=cart.find(x=>x.id===id);if(c)c.qty=Math.max(.001,+q||.001);renderCart()}
+function removeCart(id){cart=cart.filter(x=>x.id!==id);renderCart()}
+function clearCart(){cart=[];renderCart()}
+function completeSale(){
+ if(!cart.length){alert('पहले बिल में सामान जोड़ें।');return}
+ for(let c of cart){let p=db.products.find(x=>x.id===c.id);if(!p||p.stock<c.qty){alert(`${p?.name||'प्रोडक्ट'} का स्टॉक पर्याप्त नहीं है। खरीद/स्टॉक सही करें।`);return}}
+ let subtotal=cart.reduce((s,c)=>s+db.products.find(p=>p.id===c.id).price*c.qty,0),discount=Math.max(0,+document.getElementById('saleDiscount').value||0);if(discount>subtotal){alert('छूट कुल राशि से ज्यादा नहीं हो सकती।');return}
+ let total=subtotal-discount,mode=document.getElementById('saleMode').value,customer=document.getElementById('saleCustomer').value.trim(),phone=document.getElementById('salePhone').value.trim(),cash=0,upi=0,credit=0;
+ if(mode==='cash')cash=total;else if(mode==='upi')upi=total;else if(mode==='credit')credit=total;else{cash=Math.max(0,+document.getElementById('splitCash').value||0);upi=Math.max(0,+document.getElementById('splitUpi').value||0);if(cash+upi>total){alert('Cash और UPI कुल बिल से ज्यादा हैं।');return}credit=total-cash-upi}
+ let sale={id:db.nextBill++,date:stamp(),items:cart.map(c=>{let p=db.products.find(p=>p.id===c.id);return {id:p.id,name:p.name,code:p.code,qty:c.qty,unit:p.unit,price:p.price,cost:p.cost,lineTotal:p.price*c.qty}}),subtotal,discount,total,customer,phone,mode,cash,upi,credit};
+ sale.items.forEach(i=>{let p=db.products.find(p=>p.id===i.id);p.stock-=i.qty});db.sales.unshift(sale);db.events.unshift({date:sale.date,type:'बिक्री',detail:'बिल #'+sale.id+(customer?' • '+customer:''),amount:total});lastBill=sale;cart=[];saveDB();renderLastBill(sale);navTo('billing');alert('बिल सेव हो गया।');document.getElementById('saleCustomer').value='';document.getElementById('salePhone').value='';document.getElementById('saleDiscount').value='0';
+}
+function billHTML(s){return `<div style="font-family:Arial,sans-serif;color:#17221b"><h2 style="margin-bottom:3px">BHAGAT JI GROCERY</h2><div>बिक्री बिल • #${s.id}</div><div>${new Date(s.date).toLocaleString('en-IN')}</div><div>ग्राहक: ${esc(s.customer||'Walk-in Customer')}</div><hr><table style="width:100%;border-collapse:collapse"><tr><th style="text-align:left">सामान</th><th>Qty</th><th style="text-align:right">राशि</th></tr>${s.items.map(i=>`<tr><td>${esc(i.name)}<br><small>${money(i.price)} × ${i.qty}</small></td><td style="text-align:center">${i.qty}</td><td style="text-align:right">${money(i.lineTotal)}</td></tr>`).join('')}</table><hr><div style="text-align:right">सामान: ${money(s.subtotal)}<br>छूट: ${money(s.discount)}<br><strong>कुल: ${money(s.total)}</strong><br>Cash: ${money(s.cash)} | UPI: ${money(s.upi)}<br>उधार: ${money(s.credit)}</div><p>खरीदारी के लिए धन्यवाद! 🙏</p></div>`}
+function renderLastBill(s){document.getElementById('lastBill').innerHTML=`<div id="billPreview" class="card">${billHTML(s)}</div><button class="btn full" onclick="printBill(${s.id})">🧾 बिल प्रिंट करें</button><button class="btn secondary full" onclick="shareBill(${s.id})">🟢 WhatsApp पर बिल शेयर करें</button><p class="note">WhatsApp विकल्प ग्राहक की चैट में संदेश खोलेगा; भेजने के लिए WhatsApp में Send दबाना होगा।</p>`}
+function printBill(id){let s=db.sales.find(x=>x.id===id);if(!s)return;let w=window.open('','_blank','width=420,height=650');if(!w){alert('प्रिंट के लिए ब्राउज़र में pop-ups अनुमति दें।');return}w.document.write('<html><head><title>Bill</title><meta charset="utf-8"><style>body{font-family:Arial;padding:16px}th,td{padding:6px;border-bottom:1px solid #ddd}</style></head><body>'+billHTML(s)+'<script>window.onload=()=>window.print()<\/script></body></html>');w.document.close()}
+function shareBill(id){let s=db.sales.find(x=>x.id===id);if(!s)return;let msg=`BHAGAT JI GROCERY\\nबिल #${s.id}\\nदिनांक: ${new Date(s.date).toLocaleString('en-IN')}\\n`+s.items.map(i=>`${i.name} x ${i.qty} = ${money(i.lineTotal)}`).join('\\n')+`\\nसामान: ${money(s.subtotal)}\\nछूट: ${money(s.discount)}\\nकुल बिल: ${money(s.total)}\\nभुगतान: Cash ${money(s.cash)}, UPI ${money(s.upi)}, उधार ${money(s.credit)}\\nखरीदारी के लिए धन्यवाद!`;
+ let phone=(s.phone||'').replace(/\D/g,'');if(phone.length===10)phone='91'+phone;let url='https://wa.me/'+(phone.length>=11?phone:'')+'?text='+encodeURIComponent(msg);window.open(url,'_blank')}
+function savePurchase(){let id=+document.getElementById('purProduct').value,p=db.products.find(x=>x.id===id),qty=+document.getElementById('purQty').value,cost=+document.getElementById('purCost').value,paid=+document.getElementById('purPaid').value,supplier=document.getElementById('purSupplier').value.trim(),ref=document.getElementById('purRef').value.trim();if(!p||qty<=0||cost<0||paid<0){alert('सही प्रोडक्ट, मात्रा और राशि भरें।');return}let total=qty*cost;if(paid>total){alert('भुगतान खरीद राशि से ज्यादा है।');return}p.stock+=qty;p.cost=cost;let rec={date:stamp(),supplier:supplier||'बिना नाम का सप्लायर',product:p.name,qty,cost,total,paid,due:total-paid,ref};db.purchases.unshift(rec);db.events.unshift({date:rec.date,type:'खरीद',detail:rec.supplier+' • '+p.name,amount:total});saveDB();alert('खरीद एंट्री सेव हो गई।');document.getElementById('purSupplier').value='';document.getElementById('purRef').value=''}
+function receivePayment(){let customer=document.getElementById('payCustomer').value.trim(),phone=document.getElementById('payPhone').value.trim(),amount=+document.getElementById('payAmount').value;if(!customer||amount<=0){alert('ग्राहक का नाम और राशि भरें।');return}let x={date:stamp(),customer,phone,amount};db.customerPayments.unshift(x);db.events.unshift({date:x.date,type:'उधारी वसूली',detail:customer,amount});saveDB();alert('ग्राहक भुगतान दर्ज हो गया।');document.getElementById('payCustomer').value='';document.getElementById('payPhone').value='';document.getElementById('payAmount').value=''}
+function saveExpense(){let name=document.getElementById('expName').value.trim(),amount=+document.getElementById('expAmount').value;if(!name||amount<=0){alert('खर्च का विवरण और राशि भरें।');return}let x={date:stamp(),name,amount};db.expenses.unshift(x);db.events.unshift({date:x.date,type:'खर्च',detail:name,amount});saveDB();alert('खर्च दर्ज हो गया।');document.getElementById('expName').value='';document.getElementById('expAmount').value=''}
+function supplierPayment(){let name=document.getElementById('supPayName').value.trim(),amount=+document.getElementById('supPayAmount').value;if(!name||amount<=0){alert('सप्लायर का नाम और राशि भरें।');return}let x={date:stamp(),supplier:name,amount};db.supplierPayments.unshift(x);db.events.unshift({date:x.date,type:'सप्लायर भुगतान',detail:name,amount});saveDB();alert('सप्लायर भुगतान दर्ज हो गया।');document.getElementById('supPayName').value='';document.getElementById('supPayAmount').value=''}
+function sum(a,fn){return a.reduce((s,x)=>s+fn(x),0)}
+function refreshAll(){
+ let d=today(),sales=db.sales.filter(s=>s.date.slice(0,10)===d),purchases=db.purchases,expenses=db.expenses;
+ document.getElementById('mSales').textContent=money(sum(sales,s=>s.total));document.getElementById('mCash').textContent=money(sum(sales,s=>s.cash)+sum(db.customerPayments.filter(x=>x.date.slice(0,10)===d),x=>x.amount));document.getElementById('mUpi').textContent=money(sum(sales,s=>s.upi));document.getElementById('mCredit').textContent=money(sum(sales,s=>s.credit));document.getElementById('mProducts').textContent=db.products.length;
+ document.getElementById('mReceivable').textContent=money(Math.max(0,sum(db.sales,s=>s.credit)-sum(db.customerPayments,x=>x.amount)));document.getElementById('mPayable').textContent=money(Math.max(0,sum(purchases,p=>p.due)-sum(db.supplierPayments,x=>x.amount)));document.getElementById('mExpense').textContent=money(sum(expenses.filter(x=>x.date.slice(0,10)===d),x=>x.amount));
+ document.getElementById('recent').innerHTML=db.events.slice(0,8).map(x=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)"><div><b>${esc(x.type)}</b><br><small>${esc(x.detail)} • ${new Date(x.date).toLocaleString('en-IN')}</small></div><b>${money(x.amount)}</b></div>`).join('')||'<div class="empty">अभी कोई एंट्री नहीं।</div>';
+ renderProducts();renderCart();renderReports();renderLedger();
+}
+function renderReports(){let sales=sum(db.sales,s=>s.total),purchase=sum(db.purchases,p=>p.total),expense=sum(db.expenses,e=>e.amount),cost=sum(db.sales,s=>sum(s.items,i=>i.cost*i.qty));document.getElementById('rSales').textContent=money(sales);document.getElementById('rPurchase').textContent=money(purchase);document.getElementById('rExpense').textContent=money(expense);document.getElementById('rProfit').textContent=money(sales-cost-expense);
+ let ev=[...db.events].sort((a,b)=>b.date.localeCompare(a.date));document.getElementById('daybook').innerHTML=ev.length?'<table><thead><tr><th>दिनांक</th><th>प्रकार</th><th>विवरण</th><th class="right">राशि</th></tr></thead><tbody>'+ev.map(x=>`<tr><td>${new Date(x.date).toLocaleDateString('en-IN')}</td><td>${esc(x.type)}</td><td>${esc(x.detail)}</td><td class="right">${money(x.amount)}</td></tr>`).join('')+'</tbody></table>':'<div class="empty">अभी रिकॉर्ड नहीं हैं।</div>'}
+function renderLedger(){
+ let dueByCustomer={};db.sales.filter(s=>s.credit>0).forEach(s=>{let k=s.customer||'बिना नाम का ग्राहक';dueByCustomer[k]=(dueByCustomer[k]||0)+s.credit});db.customerPayments.forEach(p=>{dueByCustomer[p.customer]=(dueByCustomer[p.customer]||0)-p.amount});
+ let dueBySupplier={};db.purchases.forEach(p=>{dueBySupplier[p.supplier]=(dueBySupplier[p.supplier]||0)+p.due});db.supplierPayments.forEach(p=>{dueBySupplier[p.supplier]=(dueBySupplier[p.supplier]||0)-p.amount});
+ let html='<h3>ग्राहक से लेना है</h3>'+Object.entries(dueByCustomer).filter(x=>x[1]>0).map(x=>`<p>${esc(x[0])}: <b>${money(x[1])}</b></p>`).join('')+'<h3 style="margin-top:15px">सप्लायर को देना है</h3>'+Object.entries(dueBySupplier).filter(x=>x[1]>0).map(x=>`<p>${esc(x[0])}: <b>${money(x[1])}</b></p>`).join('');document.getElementById('ledgerSummary').innerHTML=html;
+}
+async function startScanner(){
+ if(!('BarcodeDetector' in window)){document.getElementById('scanMsg').textContent='इस ब्राउज़र में native barcode scanner उपलब्ध नहीं है। बारकोड नंबर टाइप करें या compatible browser/device इस्तेमाल करें।';return}
+ try{let detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']});stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});let v=document.getElementById('scanner');v.srcObject=stream;v.style.display='block';await v.play();document.getElementById('scanMsg').textContent='बारकोड को कैमरे के सामने रखें। स्कैन होने पर कैमरा बंद हो जाएगा।';
+ scanTimer=setInterval(async()=>{try{let codes=await detector.detect(v);if(codes.length){document.getElementById('scanInput').value=codes[0].rawValue;stopScanner();addByCode()}}catch(e){}},350)
+ }catch(e){document.getElementById('scanMsg').textContent='कैमरा नहीं खुल सका। ब्राउज़र को camera permission दें और HTTPS पेज पर खोलें।'}
+}
+async function startProductScanner(){
+ if(!('BarcodeDetector' in window)){document.getElementById('productScanMsg').textContent='इस ब्राउज़र में कैमरा बारकोड स्कैन सपोर्ट नहीं है। पैकेट का नंबर हाथ से दर्ज करें।';return}
+ try{
+  let detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']});
+  let ps=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+  let v=document.getElementById('productScanner');v.srcObject=ps;v.style.display='block';await v.play();
+  document.getElementById('productScanMsg').textContent='कैमरे को बारकोड पर स्थिर रखें…';
+  let timer=setInterval(async()=>{try{let codes=await detector.detect(v);if(codes.length){
+   document.getElementById('pCode').value=codes[0].rawValue;
+   clearInterval(timer);ps.getTracks().forEach(t=>t.stop());v.srcObject=null;v.style.display='none';
+   document.getElementById('productScanMsg').textContent='बारकोड भर गया। अब नाम, खरीद मूल्य, बिक्री मूल्य और स्टॉक भरकर प्रोडक्ट सेव करें।';
+  }}catch(e){}},350);
+ }catch(e){document.getElementById('productScanMsg').textContent='कैमरा नहीं खुला। Chrome की Site settings में Camera अनुमति दें। content:// फाइल में कैमरा ब्लॉक हो सकता है; HTTPS पर होस्ट करना होगा।'}
+}
+function stopScanner(){if(scanTimer)clearInterval(scanTimer);scanTimer=null;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;document.getElementById('scanner').style.display='none'}
+function exportData(){let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Bhagat-Ji-Grocery-backup-'+today()+'.json';a.click();URL.revokeObjectURL(a.href)}
+function importData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.products||!x.sales)throw Error();if(!confirm('मौजूदा रिकॉर्ड की जगह बैकअप लोड करें?'))return;db={...blank(),...x};saveDB();alert('बैकअप लोड हो गया।')}catch(err){alert('यह सही बैकअप फ़ाइल नहीं है।')}};r.readAsText(f)}
+function exportCSV(){let rows=[['Date','Type','Details','Amount'],...db.events.map(x=>[new Date(x.date).toLocaleString('en-IN'),x.type,x.detail,x.amount])];let csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download='Bhagat-Ji-Grocery-DayBook.csv';a.click();URL.revokeObjectURL(a.href)}
+function resetData(){if(confirm('क्या आप निश्चित हैं? यह इस डिवाइस का पूरा डेटा स्थायी रूप से मिटा देगा।')){localStorage.removeItem(KEY);db=blank();cart=[];lastBill=null;saveDB();alert('स्थानीय डेटा मिटा दिया गया।')}}
+refreshAll();
+</script>
+</body>
+</html>
